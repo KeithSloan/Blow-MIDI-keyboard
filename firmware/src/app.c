@@ -198,6 +198,7 @@ void WriteMIDI(uint8_t Note, uint8_t Key,uint8_t Velocity)
 // Has the USB device been plugged in and configured for write  
 if (appData.epDataWriteEnabled == true )
    {
+    WriteSerialChar('W');
     // Sending 32 bits of data from 'databuffer to the TxEndpoint
    result = USB_DEVICE_EndpointWrite( appData.usbDevHandle,
                                &dvcTransferHandle,
@@ -209,7 +210,6 @@ if (appData.epDataWriteEnabled == true )
       WriteSerialChar('E');
       BSP_LED_1On();
       }
-   WriteSerialChar('W');
    appData.epDataWritePending = true;
    }   
 }
@@ -337,11 +337,11 @@ void APP_SPIEventHandler(DRV_SPI_BUFFER_EVENT event,
         case DRV_SPI_BUFFER_EVENT_PROCESSING:
             
             APP_SPI_CS_SELECT(SPI_SLAVE_1_CS_PORT_ID,SPI_SLAVE_1_CS_PORT_PIN);
-            WriteSerialChar('p');
+            WriteSerialChar('a');
             break;
             
         case DRV_SPI_BUFFER_EVENT_COMPLETE:
-        //    WriteSerialChar('d');
+             // WriteSerialChar('b');
             if ( appData.spiBuffer[0] != 0xFF)
                {
                val = (appData.spiBuffer[0] << 8 ) | appData.spiBuffer[1];
@@ -349,55 +349,77 @@ void APP_SPIEventHandler(DRV_SPI_BUFFER_EVENT event,
                   {
                   appData.maxVal = val;
                   }
-               note = (val + Delta - Threashold)/Delta;
-               if ( note > sizeof(MIDI_LOOKUP) ) note = sizeof(MIDI_LOOKUP);
-               midiNote = MIDI_LOOKUP[note];
+                
+               //note = (val + Delta - Threashold)/Delta;
+               //if ( note > sizeof(MIDI_LOOKUP) ) note = sizeof(MIDI_LOOKUP);
+               //midiNote = MIDI_LOOKUP[note];
                // Set new note boolean
-               newNote = ((note > 0) && (appData.midiNote != midiNote));
+               //newNote = ((note > 0) && (appData.midiNote != midiNote));
                // Do we need to send NoteOff
-               if ( appData.midiNote != 0) // Previous NoteOn ?
-                  {
-                  if ( note == 0 || newNote )
-                     {
+               //if ( appData.midiNote != 0) // Previous NoteOn ?
+               //   {
+               //   if ( note == 0 || newNote )
+               //      {
                      // Send NoteOff
                      //WriteMIDI(0x08,appData.midiNote,0);
                       //Push(0x08,appData.midiNote);
                      //sprintf(appData.serialBuffer,"Note OFF\n");
                      //QueueSerialBuffer();
-                     }
-                  }
+                 //    }
+                 // }
                 // Do we need to send NoteOn
-               if (((note > 0 ) && (appData.midiNote == 0)) || newNote )
-                  {
+               //if (((note > 0 ) && (appData.midiNote == 0)) || newNote )
+               //   {
                   // Send NoteOn
                   //WriteMIDI(0x09,midiNote,Volume);
-                  Push(0x09,midiNote);
+                  //Push(0x09,midiNote);
                   //sprintf(appData.serialBuffer,"Note ON\n");
                   //QueueSerialBuffer();
-                  }
-               appData.midiNote = midiNote;
-               sprintf(appData.serialBuffer," Read %2x %2x %2x Val %5d Max %5d %d %2d\n",
-                    appData.spiBuffer[0],appData.spiBuffer[1],appData.spiBuffer[2],
-                    val,appData.maxVal,note,appData.midiNote);
-               QueueSerialBuffer();
-               BSP_LED_3On();
-               }
+                  //}
+                // Do we need to send NoteOn
+                if ( val > Threashold && appData.keybrdState == KEYBRD_NOKEY)
+                   {
+                   WriteSerialChar('c');
+                   appData.midiNote = 60;
+                   // Send NoteON
+                   WriteMIDI(0x09,midiNote,Volume);
+                   WriteSerialChar('g');
+                   appData.keybrdState = KEYBRD_KEYPRESS;
+                   sprintf(appData.serialBuffer," Read %2x %2x %2x Val %5d Max %5d %d %2d\n",
+                         appData.spiBuffer[0],appData.spiBuffer[1],appData.spiBuffer[2],
+                         val,appData.maxVal,note,appData.midiNote);
+                   QueueSerialBuffer();
+                   BSP_LED_3On();
+                   }
+                //Do we need to send NoteOff
+                if ( val <= Threashold && appData.keybrdState == KEYBRD_KEYPRESS)
+                   {
+                    WriteSerialChar('d');
+                   // Send NoteOff
+                   WriteMIDI(0x08,midiNote,0);
+                   WriteSerialChar('h');
+                   appData.keybrdState = KEYBRD_NOKEY;
+                   }
+                }
             else
-               {
-               // Should not occur
-               BSP_LED_1On();
-               }
+                {
+                // Should not occur
+                WriteSerialChar('1');
+                BSP_LED_1On();
+                }   
+            
             // Should work by leaving CS high for continuous conversion but appears not
             //appData.spiState = SPI_WAIT_DATA_READY;
             APP_SPI_CS_DESELECT(SPI_SLAVE_1_CS_PORT_ID,SPI_SLAVE_1_CS_PORT_PIN);
+            //WriteSerialChar('e');
             appData.spiState = SPI_START_CONVERSION;
             break;
             
         default:
-            WriteSerialChar('e');
+            WriteSerialChar('f');
             break;
     }
-  //WriteSerialChar('r');  
+  //WriteSerialChar('g');  
 }
 
 /* USB Event handler is a call back for USB handling*/
@@ -442,9 +464,10 @@ void APP_USBDeviceEventHandler(USB_DEVICE_EVENT event, void * eventData, uintptr
             {
                 /* Enable Read Endpoint */
                 result = USB_DEVICE_EndpointEnable(appData.usbDevHandle, 0, appData.endpointRx,
-                        USB_TRANSFER_TYPE_BULK, 16);
+                        USB_TRANSFER_TYPE_BULK, 64);
                 if (result != USB_DEVICE_RESULT_OK)
                 {
+                    WriteSerialChar('9');
                     BSP_LED_1On();
                 }
                 
@@ -454,9 +477,10 @@ void APP_USBDeviceEventHandler(USB_DEVICE_EVENT event, void * eventData, uintptr
             // Prime Receive End Point
                 result = USB_DEVICE_EndpointRead(appData.usbDevHandle, &appData.readTransferHandle,
             //            appData.endpointRx, &receivedDataBuffer[0], sizeof(receivedDataBuffer) );
-                appData.endpointRx, &receivedDataBuffer[0], 16 );
+                appData.endpointRx, &receivedDataBuffer[0], 64 );
                 if (result != USB_DEVICE_RESULT_OK)
                 {
+                    WriteSerialChar('8');
                     BSP_LED_1On();
                 }    
             appData.epDataReadPending = true;
@@ -466,9 +490,10 @@ void APP_USBDeviceEventHandler(USB_DEVICE_EVENT event, void * eventData, uintptr
                 /* Enable Write Endpoint */
             //    BSP_LED_3On();
                 result = USB_DEVICE_EndpointEnable(appData.usbDevHandle, 0, appData.endpointTx,
-                        USB_TRANSFER_TYPE_BULK, 32);
+                        USB_TRANSFER_TYPE_BULK, 64);
             if (result != USB_DEVICE_RESULT_OK)
                 {
+                WriteSerialChar('7');
                     BSP_LED_1On();
                 }
                 WriteSerialChar('T');
@@ -512,7 +537,6 @@ void APP_USBDeviceEventHandler(USB_DEVICE_EVENT event, void * eventData, uintptr
             /* VBUS was detected. We can attach the device */
             USB_DEVICE_Attach (appData.usbDevHandle);
             WriteSerialChar('P');
-            //BSP_LED_1On();
             break;
             
         case USB_DEVICE_EVENT_POWER_REMOVED:
@@ -526,7 +550,7 @@ void APP_USBDeviceEventHandler(USB_DEVICE_EVENT event, void * eventData, uintptr
             ptr = eventData;
             len = ptr -> length;
             res = ptr -> status;
-            WriteSerialChar('1');
+            WriteSerialChar('J');
             if (receivedDataBuffer[0] != 0x00 )
             {
                 WriteSerialChar('N');
@@ -545,18 +569,19 @@ void APP_USBDeviceEventHandler(USB_DEVICE_EVENT event, void * eventData, uintptr
             ptr = eventData;
             len = ptr -> length;
             res = ptr -> status;
-            WriteSerialChar('2');
+            WriteSerialChar('K');
             appData.usbState = USB_WRITE_COMPLETE;
             appData.epDataWritePending = false;
             break;
             
         /* These events are not used in this demo */
         case USB_DEVICE_EVENT_RESUMED:
-            WriteSerialChar('3');
+            WriteSerialChar('L');
             break;
             
         case USB_DEVICE_EVENT_ERROR:
-            WriteSerialChar('4');
+            WriteSerialChar('6');
+            BSP_LED_1On();
         
         default:
           //  WriteSerialChar('Z');
@@ -582,12 +607,13 @@ void APP_USBDeviceEventHandler(USB_DEVICE_EVENT event, void * eventData, uintptr
 
 void APP_Initialize ( void )
 {
-    int i;
+
     /* Place the App state machines in there initial state. */
     appData.serialState     = SERIAL_STATE_INIT;
     appData.spiState        = SPI_STATE_INIT;
     appData.timerState      = TIMER_STATE_INIT;
     appData.usbState        = USB_STATE_INIT;
+    appData.keybrdState     = KEYBRD_STATE_INIT;
     appData.heartbeatTimer  = DRV_HANDLE_INVALID;
     appData.heartbeatCount  = 0;
     appData.heartbeatToggle = false;
@@ -752,20 +778,6 @@ void APP_Tasks ( void )
             // If nothing on note stack go to USB Idle state
             
         case USB_IDLE:    
-            if (stackEmpty() != true)
-               {
-               int t = getNoteType();
-               int v = getNoteVal();
-               int vol = Volume; 
-               if (t == 0x08) vol = 0;
-               WriteMIDI(t,v,vol);
-               Pop();
-               appData.usbState = USB_WRITE_COMMAND_IN_PROCESS;
-               }
-            else
-               {
-               appData.usbState = USB_IDLE;
-               }
             break;
             
         case USB_WAITING_FOR_CONFIGURATION:
@@ -807,7 +819,21 @@ void APP_Tasks ( void )
         case SPI_READING:
             break;
         }
+    
+// Keyboard State Machine
+    switch (appData.keybrdState)
+        {
+        case KEYBRD_STATE_INIT:
+            appData.keybrdState = KEYBRD_NOKEY;
+            break;
+            
+        case KEYBRD_NOKEY:
+            break;
         
+        case KEYBRD_KEYPRESS:
+            break;
+        }
+               
 }
 
 
