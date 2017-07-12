@@ -4,3 +4,4 @@
 *.elf
 *.hex
 *.map
+/firmware/Blow-MIDI-Keyboard.X/build/default/

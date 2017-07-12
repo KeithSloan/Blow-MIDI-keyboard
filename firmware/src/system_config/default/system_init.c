@@ -429,7 +429,9 @@ const uint8_t fullSpeedConfigurationDescriptor[]=
     0x07, //bLength
     0x05, //bDescriptorType - ENDPOINT
     0x02, //bEndpointAddress - OUT
+ //   0x01,
     0x02,0x40, //wMaxPacketSize
+    //0x00,0x04,
     0x00,  //bInterval
     0x00, //bRefresh
     
@@ -443,8 +445,9 @@ const uint8_t fullSpeedConfigurationDescriptor[]=
     
     0x07, //bLength
     0x05, //bDescriptorType - ENDPOINT
-    0x81, //bEndpointAddress - OUT
+    0x81, //bEndpointAddress - In
     0x02,0x40, //wMaxPacketSize
+    //0x00,0x04,
     0x00,  //bInterval
     0x00, //bRefresh
     

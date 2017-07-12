@@ -227,7 +227,7 @@ extern "C" {
 #define DRV_USART_INIT_FLAG_STOP_IN_IDLE_IDX0       false
 #define DRV_USART_INIT_FLAGS_IDX0                   0
 #define DRV_USART_BRG_CLOCK_IDX0                    40000000
-#define DRV_USART_BAUD_RATE_IDX0                    9600
+#define DRV_USART_BAUD_RATE_IDX0                    19200
 #define DRV_USART_LINE_CNTRL_IDX0                   DRV_USART_LINE_CONTROL_8NONE1
 #define DRV_USART_HANDSHAKE_MODE_IDX0               DRV_USART_HANDSHAKE_NONE
 #define DRV_USART_XMIT_INT_SRC_IDX0                 INT_SOURCE_USART_2_TRANSMIT
@@ -289,7 +289,7 @@ extern "C" {
 #define USB_DEVICE_INSTANCES_NUMBER     1
 
 /* EP0 size in bytes */
-#define USB_DEVICE_EP0_BUFFER_SIZE      64
+#define USB_DEVICE_EP0_BUFFER_SIZE      8
 
 
 /* Enable Set descriptor events */

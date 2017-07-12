@@ -140,9 +140,16 @@ typedef enum
 
 } SPI_STATE;
 
+typedef enum
+{
+    /* keyboard state machine */
+    KEYBRD_STATE_INIT=0,
+    KEYBRD_NOKEY,
+    KEYBRD_KEYPRESS,
+            
+} KEYBRD_STATE;
 
-
-#define Threashold 166
+#define Threashold 190
 #define MaxValue 1568
 #define Notes 8
 #define Delta 90 // (MaxValue-Threashold)/Notes
@@ -196,7 +203,9 @@ typedef struct
     bool                    epDataWritePending;
     bool                    epDataWriteEnabled;
     bool                    epDataReadEnabled;
-    bool                    noteOn;
+    KEYBRD_STATE            keybrdState;
+    bool                    NoteOn_Pending;
+    bool                    NoteOff_Pending;
     int                     midiNote;
     int                     altSetting;
     int                     configurationValue;
